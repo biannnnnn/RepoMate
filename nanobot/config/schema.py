@@ -223,6 +223,8 @@ class ExecToolConfig(Base):
     path_append: str = ""
     sandbox: str = ""  # sandbox backend: "" (none) or "bwrap"
     allowed_env_keys: list[str] = Field(default_factory=list)  # Env var names to pass through to subprocess (e.g. ["GOPATH", "JAVA_HOME"])
+    deny_patterns: list[str] = Field(default_factory=list)  # Extra regex patterns to block (merged with built-in defaults); empty = use built-in defaults only
+    allow_patterns: list[str] = Field(default_factory=list)  # If non-empty, commands must match at least one of these patterns (whitelist mode)
 
 class MCPServerConfig(Base):
     """MCP server connection configuration (stdio or HTTP)."""

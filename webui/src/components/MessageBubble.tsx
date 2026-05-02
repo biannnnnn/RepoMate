@@ -1,11 +1,39 @@
-import { useState } from "react";
-import { ChevronRight, FileIcon, ImageIcon, PlaySquare, Wrench } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { ChevronRight, Copy, Download, FileIcon, FileText, ImageIcon, PlaySquare, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { MarkdownText } from "@/components/MarkdownText";
 import { cn } from "@/lib/utils";
 import type { UIImage, UIMediaAttachment, UIMessage } from "@/lib/types";
+
+interface ParsedDocument {
+  name: string;
+  content: string;
+}
+
+function parseDocuments(text: string): { documents: ParsedDocument[]; cleanText: string } {
+  const documents: ParsedDocument[] = [];
+  const regex = /---DOCUMENT:([^\n]+)---\n([\s\S]*?)---END_DOCUMENT---/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    documents.push({ name: match[1].trim(), content: match[2].trim() });
+  }
+  const cleanText = text.replace(regex, "").trim();
+  return { documents, cleanText };
+}
+
+function downloadDocument(name: string, content: string) {
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 interface MessageBubbleProps {
   message: UIMessage;
@@ -24,7 +52,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const baseAnim = "animate-in fade-in-0 slide-in-from-bottom-1 duration-300";
 
   if (message.kind === "trace") {
-    return <TraceGroup message={message} animClass={baseAnim} />;
+    return <TraceGroup message={message} />;
   }
 
   if (message.role === "user") {
@@ -60,13 +88,26 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   const empty = message.content.trim().length === 0;
   const media = message.media ?? [];
+
+  const { documents, cleanText } = useMemo(() => {
+    if (message.role !== "assistant") return { documents: [], cleanText: message.content };
+    return parseDocuments(message.content);
+  }, [message.content, message.role]);
+
   return (
     <div className={cn("w-full text-sm", baseAnim)} style={{ lineHeight: "var(--cjk-line-height)" }}>
-      {empty && message.isStreaming ? (
+      {empty && message.isStreaming && documents.length === 0 ? (
         <TypingDots />
       ) : (
         <>
-          <MarkdownText>{message.content}</MarkdownText>
+          {documents.map((doc, i) => (
+            <DocumentCard key={`${doc.name}-${i}`} name={doc.name} content={doc.content} />
+          ))}
+          {cleanText ? (
+            <MarkdownText>{cleanText}</MarkdownText>
+          ) : (
+            documents.length > 0 ? null : <MarkdownText>{message.content}</MarkdownText>
+          )}
           {message.isStreaming && <StreamCursor />}
           {media.length > 0 ? <MessageMedia media={media} align="left" /> : null}
         </>
@@ -311,9 +352,94 @@ function Dot({ delay }: { delay: string }) {
   );
 }
 
+function DocumentCard({ name, content, downloadUrl }: { name: string; content?: string; downloadUrl?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const hasContent = !!content;
+
+  const handleCopy = useCallback(async () => {
+    try {
+      const text = hasContent ? content! : (downloadUrl ? await (await fetch(downloadUrl)).text() : "");
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  }, [content, downloadUrl, hasContent]);
+
+  const handleDownload = useCallback(() => {
+    if (downloadUrl) {
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (content) {
+      downloadDocument(name, content);
+    }
+  }, [name, content, downloadUrl]);
+
+  return (
+    <div className="my-3 overflow-hidden rounded-xl border border-border/60 bg-card/80">
+      <div className="flex items-center justify-between px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-2 text-sm font-medium hover:text-foreground"
+          disabled={!hasContent}
+        >
+          <FileText className="h-4 w-4 text-teal-500 shrink-0" />
+          {name}
+          {hasContent && (
+            <ChevronRight
+              className={cn(
+                "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+                expanded && "rotate-90",
+              )}
+            />
+          )}
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {copied ? (
+              <>
+                <span className="h-3.5 w-3.5 text-teal-500">&#10003;</span>
+                已复制
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                复制
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Download className="h-3.5 w-3.5" />
+            下载
+          </button>
+        </div>
+      </div>
+      {hasContent && expanded && (
+        <div className="border-t border-border/50 px-4 pb-4 pt-3">
+          <MarkdownText>{content}</MarkdownText>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface TraceGroupProps {
   message: UIMessage;
-  animClass: string;
 }
 
 /**
@@ -321,23 +447,26 @@ interface TraceGroupProps {
  * expanded for discoverability; a single click on the header folds the
  * group down to a one-line summary so it never dominates the thread.
  */
-function TraceGroup({ message, animClass }: TraceGroupProps) {
+function TraceGroup({ message }: TraceGroupProps) {
   const { t } = useTranslation();
   const lines = message.traces ?? [message.content];
   const count = lines.length;
   const [open, setOpen] = useState(true);
   return (
-    <div className={cn("w-full", animClass)}>
+    <div className="w-full animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         className={cn(
-          "group flex w-full items-center gap-2 rounded-md px-2 py-1.5",
+          "flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5",
           "text-xs text-muted-foreground transition-colors hover:bg-muted/45",
         )}
         aria-expanded={open}
       >
-        <Wrench className="h-3.5 w-3.5" aria-hidden />
+        <Wrench className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="font-medium">
           {count === 1
             ? t("message.toolSingle")
@@ -346,22 +475,17 @@ function TraceGroup({ message, animClass }: TraceGroupProps) {
         <ChevronRight
           aria-hidden
           className={cn(
-            "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+            "ml-auto h-3.5 w-3.5 shrink-0 transition-transform duration-200",
             open && "rotate-90",
           )}
         />
       </button>
       {open && (
-        <ul
-          className={cn(
-            "mt-1 space-y-0.5 border-l border-muted-foreground/20 pl-3",
-            "animate-in fade-in-0 slide-in-from-top-1 duration-200",
-          )}
-        >
+        <ul className="mt-1 space-y-0.5 border-l border-muted-foreground/20 pl-3">
           {lines.map((line, i) => (
             <li
               key={i}
-              className="whitespace-pre-wrap break-words font-mono text-[11.5px] leading-relaxed text-muted-foreground/90"
+              className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground/70"
             >
               {line}
             </li>

@@ -91,19 +91,19 @@ export function SettingsView({
           className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          Back to chat
+          返回对话
         </button>
 
-        <h1 className="mb-6 text-base font-semibold tracking-tight">General</h1>
+        <h1 className="mb-6 text-base font-semibold tracking-tight">通用设置</h1>
 
         {loading ? (
           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading settings...
+            加载设置中...
           </div>
         ) : error ? (
           <SettingsGroup>
-            <SettingsRow title="Could not load settings">
+            <SettingsRow title="无法加载设置">
               <span className="max-w-[520px] text-sm text-muted-foreground">{error}</span>
             </SettingsRow>
           </SettingsGroup>
@@ -146,9 +146,9 @@ function SettingsSection({
   return (
     <div className="space-y-7">
       <section>
-        <h2 className="mb-2 px-2 text-xs font-medium text-muted-foreground">AI</h2>
+        <h2 className="mb-2 px-2 text-xs font-medium text-muted-foreground">AI 模型</h2>
         <SettingsGroup>
-          <SettingsRow title="Provider">
+          <SettingsRow title="提供商">
             <select
               value={form.provider}
               onChange={(event) => setForm((prev) => ({ ...prev, provider: event.target.value }))}
@@ -165,7 +165,7 @@ function SettingsSection({
             </select>
           </SettingsRow>
 
-          <SettingsRow title="Model">
+          <SettingsRow title="模型">
             <Input
               value={form.model}
               onChange={(event) => setForm((prev) => ({ ...prev, model: event.target.value }))}
@@ -185,9 +185,9 @@ function SettingsSection({
       </section>
 
       <section>
-        <h2 className="mb-2 px-2 text-xs font-medium text-muted-foreground">Interface</h2>
+        <h2 className="mb-2 px-2 text-xs font-medium text-muted-foreground">界面</h2>
         <SettingsGroup>
-          <SettingsRow title="Language">
+          <SettingsRow title="语言">
             <LanguageSwitcher />
           </SettingsRow>
         </SettingsGroup>
@@ -235,10 +235,10 @@ function SettingsFooter({
   return (
     <div className="flex min-h-[52px] items-center justify-between gap-4 px-3 py-2.5">
       <div className="text-sm text-muted-foreground">
-        {saved ? "Saved. Restart nanobot to apply." : "Unsaved changes."}
+        {saved ? "已保存，重启 nanobot 后生效。" : "有未保存的更改。"}
       </div>
       <Button size="sm" variant="outline" onClick={onSave} disabled={!dirty || saving}>
-        {saving ? "Saving" : "Save"}
+        {saving ? "保存中" : "保存"}
       </Button>
     </div>
   );

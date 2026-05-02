@@ -1,11 +1,15 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import fs from "node:fs";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const target = env.NANOBOT_API_URL ?? "http://127.0.0.1:8765";
   const wsTarget = target.replace(/^http/, "ws");
+  const workspaceRoot = path.resolve(
+    env.NANOBOT_WORKSPACE ?? path.join(process.env.HOME ?? "~", ".nanobot/workspace"),
+  );
 
   return {
     plugins: [react()],
@@ -55,6 +59,43 @@ export default defineConfig(({ mode }) => {
             req.headers.upgrade === "websocket" ? undefined : req.url,
         },
       },
+    },
+    // Serve workspace files so the frontend can download generated documents
+    // without relying on the agent to inline them as ---DOCUMENT: blocks.
+    configureServer(server) {
+      server.middlewares.use("/workspace-files/", (req, res) => {
+        const relativePath = req.url!.slice("/workspace-files/".length);
+        // Block path traversal attempts
+        if (relativePath.includes("..") || relativePath.includes("~")) {
+          res.statusCode = 403;
+          res.end("forbidden");
+          return;
+        }
+        const filePath = path.resolve(workspaceRoot, relativePath);
+        if (!filePath.startsWith(workspaceRoot)) {
+          res.statusCode = 403;
+          res.end("forbidden");
+          return;
+        }
+        try {
+          const stat = fs.statSync(filePath);
+          if (!stat.isFile()) {
+            res.statusCode = 404;
+            res.end("not found");
+            return;
+          }
+          const content = fs.readFileSync(filePath, "utf-8");
+          res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${encodeURIComponent(path.basename(filePath))}"`,
+          );
+          res.end(content);
+        } catch {
+          res.statusCode = 404;
+          res.end("not found");
+        }
+      });
     },
     test: {
       environment: "happy-dom",

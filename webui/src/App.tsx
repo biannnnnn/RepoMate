@@ -232,8 +232,8 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
 
       const isUrl = /^https?:\/\//.test(repoInput) || /^github\.com\//.test(repoInput);
       const prompt = isUrl
-        ? `I want to onboard to this GitHub repository: ${repoInput}. Please run the full onboarding pipeline — scan the structure, analyze the architecture, find tests and issues, and generate ONBOARDING.md, ARCHITECTURE.md, and FIRST_ISSUES.md.`
-        : `I want to onboard to this local project: ${repoInput}. Please run the full onboarding pipeline — scan the structure, analyze the architecture, find tests and issues, and generate ONBOARDING.md, ARCHITECTURE.md, and FIRST_ISSUES.md.`;
+        ? `请帮我分析这个 GitHub 仓库：${repoInput}。运行完整的入职分析流程——扫描目录结构、分析架构、查找测试和潜在问题，并生成 ONBOARDING.md、ARCHITECTURE.md 和 FIRST_ISSUES.md 三份文档。请用中文回复。`
+        : `请帮我分析这个本地项目：${repoInput}。运行完整的入职分析流程——扫描目录结构、分析架构、查找测试和潜在问题，并生成 ONBOARDING.md、ARCHITECTURE.md 和 FIRST_ISSUES.md 三份文档。请用中文回复。`;
 
       client.sendMessage(chatId, prompt);
     } catch (e) {
@@ -336,19 +336,21 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
       </Sheet>
 
       <main className="flex h-full min-w-0 flex-1 flex-col">
-        {view === "settings" ? (
+        <div className={view === "settings" ? "flex-1 min-h-0" : "hidden"}>
           <SettingsView
             theme={theme}
             onToggleTheme={toggle}
             onBackToChat={() => setView("chat")}
             onModelNameChange={onModelNameChange}
           />
-        ) : view === "onboarding" ? (
+        </div>
+        <div className={view === "onboarding" ? "flex-1 min-h-0" : "hidden"}>
           <OnboardingWizard
             onStart={onStartOnboarding}
             loading={onboardingLoading}
           />
-        ) : (
+        </div>
+        <div className={view === "chat" ? "flex flex-col flex-1 min-h-0" : "hidden"}>
           <ThreadShell
             session={activeSession}
             title={headerTitle}
@@ -357,7 +359,7 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
             onNewChat={onNewChat}
             hideSidebarToggleOnDesktop={desktopSidebarOpen}
           />
-        )}
+        </div>
       </main>
 
       <DeleteConfirm
