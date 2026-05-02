@@ -16,6 +16,10 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          '"PingFang SC"',
+          '"Hiragino Sans GB"',
+          '"Microsoft YaHei"',
+          '"Noto Sans SC"',
           "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
@@ -23,14 +27,7 @@ export default {
           "Roboto",
           '"Helvetica Neue"',
           "Arial",
-          '"Noto Sans"',
-          '"Noto Sans SC"',
-          '"PingFang SC"',
-          '"Hiragino Sans GB"',
-          '"Microsoft YaHei"',
           "sans-serif",
-          '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
         ],
         mono: [
           '"JetBrains Mono"',

@@ -6,12 +6,13 @@ import { SettingsView } from "@/components/settings/SettingsView";
 import { ThreadShell } from "@/components/thread/ThreadShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { preloadMarkdownText } from "@/components/MarkdownText";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { useSessions } from "@/hooks/useSessions";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { deriveWsUrl, fetchBootstrap } from "@/lib/bootstrap";
 import { NanobotClient } from "@/lib/nanobot-client";
-import { ClientProvider } from "@/providers/ClientProvider";
+import { ClientProvider, useClient } from "@/providers/ClientProvider";
 import type { ChatSummary } from "@/lib/types";
 
 type BootState =
@@ -26,7 +27,7 @@ type BootState =
 
 const SIDEBAR_STORAGE_KEY = "nanobot-webui.sidebar";
 const SIDEBAR_WIDTH = 279;
-type ShellView = "chat" | "settings";
+type ShellView = "chat" | "settings" | "onboarding";
 
 function readSidebarOpen(): boolean {
   if (typeof window === "undefined") return true;
@@ -99,17 +100,13 @@ export default function App() {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-3 animate-in fade-in-0 duration-300">
-          <img
-            src="/brand/nanobot_icon.png"
-            alt=""
-            className="h-10 w-10 animate-pulse select-none"
-            aria-hidden
-            draggable={false}
-          />
+          <div className="text-3xl font-bold">
+            Repo<span className="text-teal-500">Mate</span>
+          </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground/40" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-foreground/60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
             </span>
             {t("app.loading.connecting")}
           </div>
@@ -121,13 +118,9 @@ export default function App() {
     return (
       <div className="flex h-full w-full items-center justify-center px-4 text-center">
         <div className="flex max-w-md flex-col items-center gap-3">
-          <img
-            src="/brand/nanobot_icon.png"
-            alt=""
-            className="h-10 w-10 opacity-60 grayscale select-none"
-            aria-hidden
-            draggable={false}
-          />
+          <div className="text-2xl font-bold opacity-60 grayscale select-none">
+            Repo<span className="text-teal-500">Mate</span>
+          </div>
           <p className="text-lg font-semibold">{t("app.error.title")}</p>
           <p className="text-sm text-muted-foreground">{state.message}</p>
           <p className="text-xs text-muted-foreground">
@@ -156,11 +149,13 @@ export default function App() {
 }
 
 function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | null) => void }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { theme, toggle } = useTheme();
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions();
+  const { client } = useClient();
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [view, setView] = useState<ShellView>("chat");
+  const [view, setView] = useState<ShellView>("onboarding");
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] =
     useState<boolean>(readSidebarOpen);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -194,10 +189,6 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
     return sessions.find((s) => s.key === activeKey) ?? null;
   }, [sessions, activeKey]);
 
-  const closeDesktopSidebar = useCallback(() => {
-    setDesktopSidebarOpen(false);
-  }, []);
-
   const closeMobileSidebar = useCallback(() => {
     setMobileSidebarOpen(false);
   }, []);
@@ -225,6 +216,31 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
       return null;
     }
   }, [createChat]);
+
+  const onStartOnboarding = useCallback(async (repoInput: string) => {
+    setOnboardingLoading(true);
+    try {
+      const chatId = await createChat();
+      if (!chatId) {
+        setOnboardingLoading(false);
+        return;
+      }
+      const key = `websocket:${chatId}`;
+      setActiveKey(key);
+      setView("chat");
+      setMobileSidebarOpen(false);
+
+      const isUrl = /^https?:\/\//.test(repoInput) || /^github\.com\//.test(repoInput);
+      const prompt = isUrl
+        ? `I want to onboard to this GitHub repository: ${repoInput}. Please run the full onboarding pipeline — scan the structure, analyze the architecture, find tests and issues, and generate ONBOARDING.md, ARCHITECTURE.md, and FIRST_ISSUES.md.`
+        : `I want to onboard to this local project: ${repoInput}. Please run the full onboarding pipeline — scan the structure, analyze the architecture, find tests and issues, and generate ONBOARDING.md, ARCHITECTURE.md, and FIRST_ISSUES.md.`;
+
+      client.sendMessage(chatId, prompt);
+    } catch (e) {
+      console.error("Failed to start onboarding", e);
+    }
+    setOnboardingLoading(false);
+  }, [createChat, client]);
 
   const onSelectChat = useCallback(
     (key: string) => {
@@ -256,13 +272,13 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
   const headerTitle = activeSession
     ? activeSession.preview ||
       t("chat.fallbackTitle", { id: activeSession.chatId.slice(0, 6) })
-    : t("app.brand");
+    : "RepoMate";
 
   useEffect(() => {
     document.title = activeSession
       ? t("app.documentTitle.chat", { title: headerTitle })
-      : t("app.documentTitle.base");
-  }, [activeSession, headerTitle, i18n.resolvedLanguage, t]);
+      : "RepoMate · Codebase Onboarding";
+  }, [activeSession, headerTitle, t]);
 
   const sidebarProps = {
     sessions,
@@ -282,27 +298,28 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
       setView("settings" as const);
       setMobileSidebarOpen(false);
     },
+    onOpenOnboarding: () => {
+      setView("onboarding" as const);
+      setActiveKey(null);
+      setMobileSidebarOpen(false);
+    },
   };
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      {/* Desktop sidebar: in normal flow, so the thread area width stays honest. */}
+      {/* Desktop sidebar */}
       <aside
         className={cn(
           "relative z-20 hidden shrink-0 overflow-hidden lg:block",
           "transition-[width] duration-300 ease-out",
         )}
-        style={{ width: desktopSidebarOpen ? SIDEBAR_WIDTH : 0 }}
+        style={{ width: desktopSidebarOpen ? SIDEBAR_WIDTH : 48 }}
       >
-        <div
-          className={cn(
-            "absolute inset-y-0 left-0 h-full w-[279px] overflow-hidden bg-sidebar shadow-inner-right",
-            "transition-transform duration-300 ease-out",
-            desktopSidebarOpen ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <Sidebar {...sidebarProps} onCollapse={closeDesktopSidebar} />
-        </div>
+        <Sidebar
+          {...sidebarProps}
+          collapsed={!desktopSidebarOpen}
+          onToggleCollapse={toggleSidebar}
+        />
       </aside>
 
       <Sheet
@@ -314,7 +331,7 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
           showCloseButton={false}
           className="w-[279px] p-0 sm:max-w-[279px] lg:hidden"
         >
-          <Sidebar {...sidebarProps} onCollapse={closeMobileSidebar} />
+          <Sidebar {...sidebarProps} onToggleCollapse={closeMobileSidebar} />
         </SheetContent>
       </Sheet>
 
@@ -325,6 +342,11 @@ function Shell({ onModelNameChange }: { onModelNameChange: (modelName: string | 
             onToggleTheme={toggle}
             onBackToChat={() => setView("chat")}
             onModelNameChange={onModelNameChange}
+          />
+        ) : view === "onboarding" ? (
+          <OnboardingWizard
+            onStart={onStartOnboarding}
+            loading={onboardingLoading}
           />
         ) : (
           <ThreadShell

@@ -1,26 +1,29 @@
 {
   "app": {
-    "brand": "nanobot",
+    "brand": "RepoMate",
     "loading": {
-      "connecting": "正在连接 nanobot…",
-      "boot": "正在加载 nanobot…"
+      "connecting": "正在连接 RepoMate…",
+      "boot": "正在加载 RepoMate…"
     },
     "error": {
-      "title": "无法连接到 nanobot",
+      "title": "无法连接到 RepoMate",
       "gatewayHint": "请确认 gateway 已启动（`nanobot gateway`），并且当前页面与 gateway 运行在同一台机器上。"
     },
     "documentTitle": {
-      "base": "nanobot",
-      "chat": "{{title}} · nanobot"
+      "base": "RepoMate",
+      "chat": "{{title}} · RepoMate"
     },
     "meta": {
-      "description": "nanobot Web UI —— 与你的 nanobot 工作区对话。"
+      "description": "RepoMate Web UI —— 代码库智能入职分析工具。"
     }
   },
   "sidebar": {
     "collapse": "收起侧边栏",
     "toggleTheme": "切换主题",
     "newChat": "新建对话",
+    "onboarding": "入职分析",
+    "chats": "对话",
+    "settings": "设置",
     "recent": "最近对话",
     "refreshSessions": "刷新会话",
     "language": {

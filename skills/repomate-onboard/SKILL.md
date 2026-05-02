@@ -1,10 +1,6 @@
 ---
 name: repomate-onboard
 description: "New-hire onboarding for any codebase. Generates a codebase map, architecture document (ARCHITECTURE.md), first-issues list (FIRST_ISSUES.md), and a week-1 onboarding roadmap (ONBOARDING.md). Use when a user asks to: onboard to a GitHub repo or local project, generate onboarding documentation, understand a new codebase, or get a first-week plan as a new intern. Triggers on phrases like 'onboard me', 'help me understand this repo', 'generate onboarding docs', 'I'm new to this codebase'."
-metadata:
-  nanobot:
-    requires:
-      env: ["OPENAI_API_KEY"]
 ---
 # RepoMate Onboarding Pipeline
 

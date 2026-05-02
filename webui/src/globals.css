@@ -57,6 +57,9 @@
     --sidebar-accent: 0 0% 16%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 18%;
+    /* RepoMate teal accent */
+    --repomate: 173 80% 40%;
+    --repomate-foreground: 0 0% 100%;
   }
 }
 

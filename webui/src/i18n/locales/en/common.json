@@ -1,26 +1,29 @@
 {
   "app": {
-    "brand": "nanobot",
+    "brand": "RepoMate",
     "loading": {
-      "connecting": "Connecting to nanobot…",
-      "boot": "Loading nanobot…"
+      "connecting": "Connecting to RepoMate…",
+      "boot": "Loading RepoMate…"
     },
     "error": {
-      "title": "Couldn't reach nanobot",
+      "title": "Couldn't reach RepoMate",
       "gatewayHint": "Make sure the gateway is running (`nanobot gateway`) and that this page is open on the same machine."
     },
     "documentTitle": {
-      "base": "nanobot",
-      "chat": "{{title}} · nanobot"
+      "base": "RepoMate",
+      "chat": "{{title}} · RepoMate"
     },
     "meta": {
-      "description": "nanobot web UI — chat with your nanobot workspace."
+      "description": "RepoMate web UI — AI-powered codebase onboarding."
     }
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
     "toggleTheme": "Toggle theme",
     "newChat": "New chat",
+    "onboarding": "Onboard a Repo",
+    "chats": "Chats",
+    "settings": "Settings",
     "recent": "Recent",
     "refreshSessions": "Refresh sessions",
     "language": {

@@ -24,7 +24,7 @@ const COPY: Record<ConnectionStatus, { color: string }> = {
   },
 };
 
-export function ConnectionBadge() {
+export function ConnectionBadge({ collapsed }: { collapsed?: boolean }) {
   const { t } = useTranslation();
   const { client } = useClient();
   const [status, setStatus] = useState<ConnectionStatus>(client.status);
@@ -36,6 +36,23 @@ export function ConnectionBadge() {
     status === "connecting" ||
     status === "reconnecting" ||
     status === "error";
+
+  if (collapsed) {
+    return (
+      <span className="relative flex h-2 w-2 shrink-0" aria-label={t(`connection.${status}`)}>
+        {pulsing && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+        )}
+        <span
+          className={cn(
+            "relative inline-flex h-2 w-2 rounded-full",
+            status === "open" ? "bg-emerald-500" : status === "closed" || status === "idle" ? "bg-muted-foreground/40" : "bg-amber-500",
+          )}
+        />
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
