@@ -1,0 +1,17 @@
+[project]
+name = "repomate"
+version = "0.1.0"
+description = "New-hire onboarding agent built on NanoBot — reads repos, explains architecture, finds bugs, generates onboarding docs"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "RepoMate Contributors"},
+]
+dependencies = []
+
+[project.scripts]
+repomate-mcp = "repomate.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
